@@ -16,7 +16,7 @@ ipython==7.13.0
 ipython-genutils==0.2.0
 jedi==0.16.0
 Jinja2==2.11.1
-lxml==4.5.0
+lxml==4.6.3
 MarkupSafe==1.1.1
 netaddr==0.7.19
 netdisco==2.6.0
