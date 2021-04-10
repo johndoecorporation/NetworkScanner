@@ -52,6 +52,7 @@ class Network:
         self.public = None
 
     def getNetwork(self):
+        """ Get internal network range """
         if self.network is None : 
             if self.getNetmask() :
                 try :
@@ -61,17 +62,17 @@ class Network:
         return self.network
         
     def getPublicIp(self):
+        """ Get public IP address """
         if self.public is None :
             self.public = stun.get_ip_info()[1]
             if self.public is None :
                 self.public = str(publicip.get())
-                
-        
         return self.public
 
             
         
     def getIP(self):
+        """ Get LAN address """
         if self.ip is None :
             try:
                 ipkey = netifaces.ifaddresses(self.interface)
@@ -81,6 +82,7 @@ class Network:
         return self.ip
     
     def getNetmask(self):
+        """ Get netmask of internal network """
         if self.netmask is None:
             try:
                 ipkey = netifaces.ifaddresses(self.interface)
@@ -91,6 +93,7 @@ class Network:
         return self.netmask
 
     def getMAC(self):
+        """ Get physical address """
         if self.mac is None :
             
             ipkey = netifaces.ifaddresses(self.interface)
@@ -104,16 +107,19 @@ class Network:
         return self.mac
     
     def getInterface(self):
+        """ Get card network interface up """
         if self.interface is None : 
             self.defineInterface()
         return self.interface
     
     def getGateway(self):
+        """ Get ip gateway of network """
         if self.router is None :
             self.router = (self.routers['default'][netifaces.AF_INET][0])
         return self.router
 
     def getLocation(self):
+        """ Get location of public IP address """
         if self.country is None :
             location =  DbIpCity.get(self.getPublicIp(), api_key='free')
             self.country = location.country
@@ -126,6 +132,7 @@ class Network:
     
 
     def resetConfig(self):
+        """ Reset properties of class """
         self.network = None
         self.public = None 
         self.ip = None
@@ -139,6 +146,7 @@ class Network:
             
 
     def showInterface(self):
+        """ List of interface network """
         print("[*] Searching...")
         print('\r\n')
         cpt = 1
@@ -149,6 +157,7 @@ class Network:
         print('\r\n')
         
     def showMACAddress(self):
+        """ Print physical address """
         if self.interface:
             ipkey = netifaces.ifaddresses(self.interface)
             self.mac = (ipkey[netifaces.AF_LINK][0]['addr'])
@@ -156,6 +165,7 @@ class Network:
 
     
     def showIPadresse(self):
+        """ Print local address """
         if self.interface:
             ipkey = netifaces.ifaddresses(self.interface)
             self.ip = (ipkey[netifaces.AF_INET][0]['addr'])
@@ -163,11 +173,13 @@ class Network:
 
 
     def showGateway(self):
+        """ Print gateway address """
         if self.routers :
             self.router = (self.routers['default'][netifaces.AF_INET][0])
             print('[*] Your default gateway is '+self.getGateway()+'.')
 
     def defineInterface(self):
+        """ Define your network interface to get details """
         self.showInterface()
         self.resetConfig()
         #print('[*] Choose your interface. (For example type 1 for '+self.interfaces[0]+' interface): ',self.color)
@@ -177,7 +189,7 @@ class Network:
             interface = self.interfaces[choiceInterface] 
             if interface in self.interfaces and choiceInterface >= 0 :
                 self.interface = interface
-                print(interface+' => ON\r\n')
+                print('[*] '+str(interface)+' => ON\r\n')
             else: 
                 print('This interface doesn\'t exist\r\n')
 
@@ -187,8 +199,9 @@ class Network:
             print('Please read before typing..\r\n')
     
     def getResume(self):
-        self.colors.print_random_color('[INFO NETWORK INTERFACE]\r\n')
-        self.color = None
+        """ Get complete resume of your interface network """
+        #self.colors.print_random_color('[INFO NETWORK INTERFACE]\r\n')
+        #self.color = None
         print('INTERFACE: '+self.getInterface())
         print('LOCAL IP: '+self.getIP())
         print('MAC: '+self.getMAC())
@@ -204,6 +217,7 @@ class Network:
         print('\r\n')
     
     def scanNetwork(self):
+        """ Scan devices on network """
         self.ips.clear()
         self.macs.clear()
         self.os.clear()
@@ -213,22 +227,29 @@ class Network:
         for snd,rcv in ans:
             self.ips.append(rcv[ARP].psrc)
             self.macs.append(rcv[Ether].src)
-        print('/!\ This operation may take a while')
+        print()
+        print(str(len(self.ips)) + ' devices detected !')
+        print('Starting depth scan... This operation may take a while')
         for ip in self.ips:
             print('[*] Searching OS for '+str(ip))
             resultnmap = nmap.nmap_os_detection(ip)
+            print(resultnmap[ip]['osmatch']['name'])
             try:
                 self.os.append(resultnmap[0]['name'])
+            
+            except KeyError :
+            	self.os.append(resultnmap[ip]['osmatch'])
 
             except IndexError :
                 self.os.append('')
+            
+            except KeyboardInterrupt :
+                askChoice()
 
         sizeIP = len(self.ips)
         sizeMAC = len(self.macs)
         print('\r\n')
         if sizeIP == sizeMAC :
-
-            
             print('IP: '+' '*15+'MAC: '+' '*20+'OS: ')
             for i in range(sizeIP):
                 print(self.ips[i]+' '*7+self.macs[i]+' '*7+self.os[i])
@@ -237,6 +258,7 @@ class Network:
        
 
     def askChoice(self):
+        """ Show main menu """
         print('[Network Scanner] : What do you want do ? \r\n')
         print('[1]: Get resume of your network')
         print('[2]: Define your interface')
@@ -249,6 +271,7 @@ class Network:
 
     
     def assumeChoice(self,choice):
+        """ Activate function from menu choice """
         listChoice = ['1','2','3','4','5']
         if choice in listChoice :
             if choice == '1':
@@ -260,7 +283,6 @@ class Network:
             if choice == '4':
                 target = Target()
                 target.getResumeTarget()
-
             if choice == '5':
                 print('[*] Bye...\r\n')
                 self.run = False
@@ -269,6 +291,7 @@ class Network:
             print('Bad choice, try again...\r\n')
     
     def start(self):
+        """ Start app function """
         print('\r\n')
         print('[*] For start, you have to define which interface you want use.')
         self.defineInterface()
