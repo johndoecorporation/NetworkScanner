@@ -1,10 +1,16 @@
-from Network import Network
+from scan import Network
 
 class Arp :
     def __init__(self):        
-        self.ip_target = None
-        self.gateway = None
+        self.target = None
+        self.gateway = Network().getGateway()
 
+    def askTarget(self):
+        self.target = input('[*] Enter your victim ip address: ')
+
+
+a = Arp()
+a.askTarget()
 
 
 

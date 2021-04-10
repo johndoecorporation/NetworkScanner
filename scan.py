@@ -1,3 +1,4 @@
+import re
 import sys
 import os 
 import netifaces
@@ -51,6 +52,9 @@ class Network:
         self.os = []
         self.public = None
 
+########## GETTERS ############
+
+
     def getNetwork(self):
         """ Get internal network range """
         if self.network is None : 
@@ -92,7 +96,7 @@ class Network:
 
         return self.netmask
 
-    def getMAC(self):
+    def getMAC(self, spoof=False):
         """ Get physical address """
         if self.mac is None :
             
@@ -102,8 +106,13 @@ class Network:
                 self.mac = (ipkey[netifaces.AF_LINK][0]['addr'])
             except KeyError :
                 self.mac = ipkey[10][0]['addr']
-                
-
+        else :
+            if spoof == True: 
+                ipkey = netifaces.ifaddresses(self.interface)
+                try :
+                    self.mac = (ipkey[netifaces.AF_LINK][0]['addr'])
+                except KeyError :
+                    self.mac = ipkey[10][0]['addr']    
         return self.mac
     
     def getInterface(self):
@@ -129,21 +138,28 @@ class Network:
             self.lng = location.longitude
         return self.country,self.city,self.region,self.lat,self.lng
 
+    def getResume(self):
+        """ Get complete resume of your interface network """
+        #self.colors.print_random_color('[INFO NETWORK INTERFACE]\r\n')
+        #self.color = None
+        print('INTERFACE: '+self.getInterface())
+        print('LOCAL IP: '+self.getIP())
+        print('MAC: '+self.getMAC())
+        print('NETMASK: '+self.getNetmask())
+        print('GATEWAY: '+self.getGateway())
+        print('NETWORK: '+str(self.getNetwork()))
+        print('PUBLIC IP: '+self.getPublicIp())
+        print('COUNTRY: '+self.getLocation()[0])
+        print('CITY: '+self.getLocation()[1])
+        print('REGION: '+self.getLocation()[2])
+        print('LATITUDE: '+str(self.getLocation()[3]))
+        print('LONGITUDE: '+str(self.getLocation()[4]))
+        print('\r\n')
+
     
 
-    def resetConfig(self):
-        """ Reset properties of class """
-        self.network = None
-        self.public = None 
-        self.ip = None
-        self.netmask = None
-        self.mac = None
-        self.country = None
-        self.city = None
-        self.region = None
-        self.lat = None
-        self.lng = None
-            
+########## PRINTERS ############
+           
 
     def showInterface(self):
         """ List of interface network """
@@ -178,6 +194,23 @@ class Network:
             self.router = (self.routers['default'][netifaces.AF_INET][0])
             print('[*] Your default gateway is '+self.getGateway()+'.')
 
+    def showChoice(self):
+        """ Show main menu """
+        print('[Network Scanner] : What do you want do ? \r\n')
+        print('[1]: Get resume of your network')
+        print('[2]: Define your interface')
+        print('[3]: Scan network')
+        print('[4]: Find details target')
+        print('[5]: Spoof MAC address')
+        print('[6]: Quit\r\n')
+        answer = input('Your choice: ')
+        #print('\r\n')
+        return answer
+
+
+
+########## SETTTERS ############
+
     def defineInterface(self):
         """ Define your network interface to get details """
         self.showInterface()
@@ -197,24 +230,48 @@ class Network:
             print('This interface doesn\'t exist\r\n')
         except ValueError:
             print('Please read before typing..\r\n')
+
+    def regexMAC(self,addr):
+        if re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", addr.lower()):
+            return True
+        return False
+
+    def spoofMac(self): 
+        answer = None
+        choice = ['1','2']
+        while True :
+            print('\r\n[Mac changer]: What do you want to do ?\r\n')
+            print('[1]: Generate random MAC address')
+            print('[2]: Spoof specific MAC address\r\n')
+            answer = input('Your choice: ')
+            if answer in choice :
+                break
+        print()
+        if str(answer) == choice[0] :
+            print('[*] Your old MAC address is: '+self.getMAC())
+            os.system('spoof-mac.py randomize '+self.getInterface())
+            print('[*] Your new MAC address is: '+self.getMAC(spoof=True))
+            print()
+        if str(answer) == choice[1] :
+            while True: 
+                new_mac_address = input('[*] Enter your spoofed MAC address: ')
+                if self.regexMAC(new_mac_address):
+                    break
+                print('[*] Wrong format, retry')
+            print('[*] Your old MAC address is: '+self.getMAC())
+            os.system('spoof-mac.py set '+str(new_mac_address)+' '+self.getInterface())
+            print('[*] Your new MAC address is: '+self.getMAC(spoof=True))
+            print()
+        
+
+
+
+
+        
+
+
     
-    def getResume(self):
-        """ Get complete resume of your interface network """
-        #self.colors.print_random_color('[INFO NETWORK INTERFACE]\r\n')
-        #self.color = None
-        print('INTERFACE: '+self.getInterface())
-        print('LOCAL IP: '+self.getIP())
-        print('MAC: '+self.getMAC())
-        print('NETMASK: '+self.getNetmask())
-        print('GATEWAY: '+self.getGateway())
-        print('NETWORK: '+str(self.getNetwork()))
-        print('PUBLIC IP: '+self.getPublicIp())
-        print('COUNTRY: '+self.getLocation()[0])
-        print('CITY: '+self.getLocation()[1])
-        print('REGION: '+self.getLocation()[2])
-        print('LATITUDE: '+str(self.getLocation()[3]))
-        print('LONGITUDE: '+str(self.getLocation()[4]))
-        print('\r\n')
+########## NETWORK FUNCTION ############
     
     def scanNetwork(self):
         """ Scan devices on network """
@@ -244,7 +301,7 @@ class Network:
                 self.os.append('')
             
             except KeyboardInterrupt :
-                askChoice()
+                showChoice()
 
         sizeIP = len(self.ips)
         sizeMAC = len(self.macs)
@@ -257,17 +314,7 @@ class Network:
         print('\r\n')
        
 
-    def askChoice(self):
-        """ Show main menu """
-        print('[Network Scanner] : What do you want do ? \r\n')
-        print('[1]: Get resume of your network')
-        print('[2]: Define your interface')
-        print('[3]: Scan network')
-        print('[4]: Find details target')
-        print('[5]: Quit\r\n')
-        answer = input('Your choice: ')
-        print('\r\n')
-        return answer
+
 
     
     def assumeChoice(self,choice):
@@ -284,6 +331,9 @@ class Network:
                 target = Target()
                 target.getResumeTarget()
             if choice == '5':
+                self.spoofMac()
+
+            if choice == '6':
                 print('[*] Bye...\r\n')
                 self.run = False
                 sys.exit(0)
@@ -296,8 +346,21 @@ class Network:
         print('[*] For start, you have to define which interface you want use.')
         self.defineInterface()
         while self.run :
-            choice = self.askChoice()
+            choice = self.showChoice()
             self.assumeChoice(choice)
+
+    def resetConfig(self):
+        """ Reset properties of class """
+        self.network = None
+        self.public = None 
+        self.ip = None
+        self.netmask = None
+        self.mac = None
+        self.country = None
+        self.city = None
+        self.region = None
+        self.lat = None
+        self.lng = None
 
 
 
