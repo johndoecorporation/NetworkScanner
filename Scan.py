@@ -391,6 +391,7 @@ class Network:
 
 
     def arp(self):
+        # https://www.thepythoncode.com/article/make-dns-spoof-python
         
         while True :
             self.target = input('[*] Enter your victim IP address: ')
