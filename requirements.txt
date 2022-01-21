@@ -12,7 +12,7 @@ docutils==0.16
 idna==2.9
 ifaddr==0.1.6
 imagesize==1.2.0
-ipython==7.13.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.16.0
 Jinja2==2.11.1
